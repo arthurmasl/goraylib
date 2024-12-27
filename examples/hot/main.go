@@ -13,6 +13,8 @@ const libraryPath = "resources/library.so"
 
 var lastMod time.Time
 
+// 	@go build -buildmode=plugin -o resources/library.so cmd/library/main.go
+
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowUnfocused)
 	rl.SetConfigFlags(rl.FlagWindowResizable)
