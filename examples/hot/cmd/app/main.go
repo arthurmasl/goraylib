@@ -9,9 +9,12 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-const libraryPath = "resources/library.so"
+const resourcesPath = "examples/hot/resources"
 
-var lastMod time.Time
+var (
+	lastMod  time.Time
+	updateFn func()
+)
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowUnfocused)
@@ -34,22 +37,40 @@ func main() {
 }
 
 func updateHot() {
+	if updateFn != nil {
+		updateFn()
+	}
+
 	// check mod time
-	fileInfo, err := os.Stat(libraryPath)
+	info, err := os.Stat(resourcesPath)
 	if err != nil {
 		panic(err)
 	}
-	currMod := fileInfo.ModTime()
+	currMod := info.ModTime()
 	if time.Time.Equal(lastMod, currMod) {
 		return
 	}
 	lastMod = currMod
+	fmt.Println("dir modified")
 
-	// hot reload
-	fmt.Println("update")
-	lib, err := plugin.Open(libraryPath)
+	// get plugin
+	dir, err := os.Open(resourcesPath)
 	if err != nil {
 		panic(err)
+	}
+	defer dir.Close()
+
+	files, err := dir.Readdirnames(1)
+	if err != nil {
+		return
+	}
+	pluginPath := fmt.Sprintf("%v/%v", resourcesPath, files[0])
+	fmt.Println("found", pluginPath)
+
+	// hot reload
+	lib, err := plugin.Open(pluginPath)
+	if err != nil {
+		return
 	}
 
 	update, err := lib.Lookup("Update")
@@ -57,5 +78,13 @@ func updateHot() {
 		panic(err)
 	}
 
-	update.(func())()
+	updateFn = update.(func())
+	updateFn()
+
+	// remove plugin
+	fmt.Println("remove", pluginPath)
+	err = os.Remove(pluginPath)
+	if err != nil {
+		panic(err)
+	}
 }
