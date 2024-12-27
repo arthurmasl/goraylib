@@ -1,6 +1,8 @@
 package main
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 func main() {
 	// lib, err := plugin.Open("resources/library.so")
@@ -15,17 +17,20 @@ func main() {
 	//
 	// f.(func())()
 
-	rl.InitWindow(800, 450, "raylib [core] example - basic window")
+	rl.SetConfigFlags(rl.FlagWindowUnfocused)
+	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.InitWindow(1280, 1412, "goraylib")
 	defer rl.CloseWindow()
+
+	rl.SetWindowPosition(rl.GetMonitorWidth(0), 0)
 
 	rl.SetTargetFPS(60)
 
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
+		rl.ClearBackground(rl.Black)
 
-		rl.ClearBackground(rl.RayWhite)
-		rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
-
+		rl.DrawFPS(10, 10)
 		rl.EndDrawing()
 	}
 }
