@@ -4,11 +4,10 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/dummy"
-  # cmd = "go build -o ./tmp/main ./cmd/app"
-  cmd = "make plugin"
+  bin = "./tmp/main"
+  cmd = "go build -o ./tmp/main ./cmd/app"
   delay = 50
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "cmd/app"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "examples"]
   exclude_file = []
   exclude_regex = ["_test.go", ".null-ls"]
   exclude_unchanged = false

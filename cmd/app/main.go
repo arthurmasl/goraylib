@@ -1,17 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"plugin"
-	"time"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-const libraryPath = "resources/library.so"
-
-var lastMod time.Time
+var pos = rl.Vector2{}
 
 func main() {
 	rl.SetConfigFlags(rl.FlagWindowUnfocused)
@@ -23,39 +16,21 @@ func main() {
 	rl.SetTargetFPS(60)
 
 	for !rl.WindowShouldClose() {
-		rl.BeginDrawing()
-		rl.ClearBackground(rl.Black)
-
-		updateHot()
-
-		rl.DrawFPS(10, 10)
-		rl.EndDrawing()
+		update()
+		draw()
 	}
 }
 
-func updateHot() {
-	// check mod time
-	fileInfo, err := os.Stat(libraryPath)
-	if err != nil {
-		panic(err)
-	}
-	currMod := fileInfo.ModTime()
-	if time.Time.Equal(lastMod, currMod) {
-		return
-	}
-	lastMod = currMod
+func update() {
+	pos = rl.GetMousePosition()
+}
 
-	// hot reload
-	fmt.Println("update")
-	lib, err := plugin.Open(libraryPath)
-	if err != nil {
-		panic(err)
-	}
+func draw() {
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.Black)
 
-	update, err := lib.Lookup("Update")
-	if err != nil {
-		panic(err)
-	}
+	rl.DrawRectangle(int32(pos.X), int32(pos.Y), 100, 100, rl.Red)
 
-	update.(func())()
+	rl.DrawFPS(10, 10)
+	rl.EndDrawing()
 }
