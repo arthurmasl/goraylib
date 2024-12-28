@@ -5,42 +5,31 @@ import (
 	"os"
 	"plugin"
 	"time"
-
-	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const resourcesPath = "examples/hot/resources"
 
 var (
 	lastMod  time.Time
-	updateFn func()
+	updateFn func() bool
+	initFn   func()
+	lib      *plugin.Plugin
+	libPath  string
 )
 
 func main() {
-	rl.SetConfigFlags(rl.FlagWindowUnfocused)
-	rl.SetConfigFlags(rl.FlagWindowResizable)
-	rl.InitWindow(1280, 1412, "goraylib")
-	defer rl.CloseWindow()
+	time.Sleep(time.Second)
+	initWindow()
 
-	rl.SetWindowPosition(rl.GetMonitorWidth(0), 0)
-	rl.SetTargetFPS(60)
-
-	for !rl.WindowShouldClose() {
-		rl.BeginDrawing()
-		rl.ClearBackground(rl.Black)
-
-		updateHot()
-
-		rl.DrawFPS(10, 10)
-		rl.EndDrawing()
+	for {
+		exit := updateHot()
+		if exit {
+			break
+		}
 	}
 }
 
-func updateHot() {
-	if updateFn != nil {
-		updateFn()
-	}
-
+func loadLib() bool {
 	// check mod time
 	info, err := os.Stat(resourcesPath)
 	if err != nil {
@@ -48,7 +37,7 @@ func updateHot() {
 	}
 	currMod := info.ModTime()
 	if time.Time.Equal(lastMod, currMod) {
-		return
+		return false
 	}
 	lastMod = currMod
 	fmt.Println("dir modified")
@@ -62,29 +51,51 @@ func updateHot() {
 
 	files, err := dir.Readdirnames(1)
 	if err != nil {
-		return
+		return false
 	}
-	pluginPath := fmt.Sprintf("%v/%v", resourcesPath, files[0])
-	fmt.Println("found", pluginPath)
+	libPath = fmt.Sprintf("%v/%v", resourcesPath, files[0])
+	fmt.Println("found", libPath)
+
+	lib, err = plugin.Open(libPath)
+	os.Remove(libPath)
+	return err == nil
+}
+
+func initWindow() {
+	loadLib()
+	if lib == nil {
+		panic("Library not loaded")
+	}
+
+	init, err := lib.Lookup("Init")
+	if err != nil {
+		panic(err)
+	}
+
+	init.(func())()
+	fmt.Println("Window created")
+}
+
+func updateHot() bool {
+	if updateFn != nil {
+		exit := updateFn()
+		if exit {
+			return true
+		}
+	}
+
+	isModified := loadLib()
+	if !isModified || lib == nil {
+		return false
+	}
 
 	// hot reload
-	lib, err := plugin.Open(pluginPath)
-	if err != nil {
-		return
-	}
-
 	update, err := lib.Lookup("Update")
 	if err != nil {
 		panic(err)
 	}
 
-	updateFn = update.(func())
-	updateFn()
-
-	// remove plugin
-	fmt.Println("remove", pluginPath)
-	err = os.Remove(pluginPath)
-	if err != nil {
-		panic(err)
-	}
+	updateFn = update.(func() bool)
+	exit := updateFn()
+	return exit
 }
